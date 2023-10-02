@@ -1,0 +1,17 @@
+# Node.js / Express
+node_modules/
+npm-debug.log
+
+# Build / Dist folder
+build/
+dist/
+
+# Environment variables
+.env
+
+# IDE / Editor-specific files
+.vscode/
+.idea/
+
+# Mac OS files
+.DS_Store
