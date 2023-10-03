@@ -19,12 +19,19 @@ io.on('connection', (socket) => {
       rooms[roomId] = [];
     }
     rooms[roomId].push(playerName);
-    io.to(roomId).emit('player-joined', rooms[roomId]);
+    io.to(roomId).emit('player-joined', rooms[roomId]); // Emit the updated players list
   });
 
   socket.on('start-game', (roomId) => {
     // Handle game start logic here
-    // You can emit game-related events to players in the room
+    // You can emit a 'game-started' event to all players in the room
+    io.to(roomId).emit('game-started');
+  });
+
+  socket.on('flip-card', (roomId, cardId) => {
+    // Handle when a player flips a card
+    // You can broadcast the card flip to all players in the room
+    io.to(roomId).emit('flip-card', cardId);
   });
 
   socket.on('disconnect', () => {
