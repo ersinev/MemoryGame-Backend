@@ -16,7 +16,7 @@ const PORT = process.env.PORT || 5000;
 
 const rooms = {};
 const corsOptions = {
-  origin: 'http://localhost:3000', // Replace with the URL of your frontend
+  origin: 'http://localhost:3000',
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 };
 app.use(cors(corsOptions));
