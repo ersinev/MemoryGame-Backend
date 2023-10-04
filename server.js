@@ -5,20 +5,27 @@ const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+const cors = require('cors');
 
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
+
+app.use(cors());
 
 io.on('connection', (socket) => {
   console.log('A user connected');
 
   socket.on('join-room', (roomId, playerName) => {
     socket.join(roomId);
+    
     if (!rooms[roomId]) {
       rooms[roomId] = [];
     }
-    rooms[roomId].push(playerName);
+    
+    // Store the playerName associated with the socket.id
+    rooms[roomId].push({ id: socket.id, name: playerName });
+    
     io.to(roomId).emit('player-joined', rooms[roomId]); // Emit the updated players list
   });
 
@@ -38,9 +45,9 @@ io.on('connection', (socket) => {
     console.log('A user disconnected');
     const roomId = Object.keys(socket.rooms)[1];
     if (roomId && rooms[roomId]) {
-      const playerName = rooms[roomId].find((name) => name === socket.id);
-      if (playerName) {
-        rooms[roomId] = rooms[roomId].filter((name) => name !== playerName);
+      const playerIndex = rooms[roomId].findIndex((player) => player.id === socket.id);
+      if (playerIndex !== -1) {
+        rooms[roomId].splice(playerIndex, 1);
         io.to(roomId).emit('player-left', rooms[roomId]);
       }
     }
