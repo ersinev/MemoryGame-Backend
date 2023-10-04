@@ -20,9 +20,11 @@ const corsOptions = {
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
 };
 app.use(cors(corsOptions));
-
+let totalUsers= 0
 io.on('connection', (socket) => {
   console.log('A user connected');
+  totalUsers++;
+  console.log(`---------Total Online Users: ${totalUsers}--------------`)
 
   socket.on('join-room', (roomId, playerName) => {
     socket.join(roomId);
@@ -50,7 +52,10 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    totalUsers--
+
     console.log('A user disconnected');
+    console.log(`---------Total Online Users: ${totalUsers}--------------`)
     const roomId = Object.keys(socket.rooms)[1];
     if (roomId && rooms[roomId]) {
       const playerIndex = rooms[roomId].findIndex((player) => player.id === socket.id);
