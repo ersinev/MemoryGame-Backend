@@ -4,14 +4,22 @@ const socketIo = require('socket.io');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: 'http://localhost:3000',
+    methods: ['GET', 'POST'],
+  },
+});
 const cors = require('cors');
 
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
-
-app.use(cors());
+const corsOptions = {
+  origin: 'http://localhost:3000', // Replace with the URL of your frontend
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+};
+app.use(cors(corsOptions));
 
 io.on('connection', (socket) => {
   console.log('A user connected');
