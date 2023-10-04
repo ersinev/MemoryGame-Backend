@@ -33,10 +33,10 @@ io.on('connection', (socket) => {
       rooms[roomId] = [];
     }
     
-    // Store the playerName associated with the socket.id
+   
     rooms[roomId].push({ id: socket.id, name: playerName });
     
-    io.to(roomId).emit('player-joined', rooms[roomId]); // Emit the updated players list
+    io.to(roomId).emit('player-joined', rooms[roomId]); 
   });
 
   socket.on('start-game', (roomId) => {
