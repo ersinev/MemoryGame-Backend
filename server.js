@@ -63,7 +63,6 @@ io.on("connection", (socket) => {
   socket.on("flip-card", (roomId, playerName, cardId) => {
     io.to(roomId).emit("card-flipped", playerName, cardId);
   });
-
   socket.on("disconnect", () => {
     totalUsers--;
 
