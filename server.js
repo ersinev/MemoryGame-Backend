@@ -50,9 +50,9 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("start-game", (roomId) => {
+  socket.on("start-game", (roomId,cardsData) => {
     if (rooms[roomId]) {
-      io.to(roomId).emit("game-started", rooms[roomId].gameId);
+      io.to(roomId).emit("game-started", rooms[roomId].gameId,cardsData);
       // Implement game start logic here (e.g., shuffle and distribute cards)
       console.log(roomId);
     } else {
