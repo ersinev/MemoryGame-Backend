@@ -15,11 +15,13 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
+const roomCards = {}; // Dictionary to store shuffled cards for each room
 const corsOptions = {
   origin: "http://localhost:3000",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
+app.use(express.json()); // Enable JSON request body parsing
 
 let totalUsers = 0;
 
@@ -45,16 +47,15 @@ io.on("connection", (socket) => {
 
     if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
       rooms[roomId].gameStarted = true;
-      io.to(roomId).emit("game-started", rooms[roomId].gameId);
+      io.to(roomId).emit("game-started", rooms[roomId].gameId, roomCards[roomId]);
       // Implement game start logic here (e.g., shuffle and distribute cards)
     }
   });
 
-  socket.on("start-game", (roomId,cardsData) => {
+  socket.on("start-game", (roomId) => {
     if (rooms[roomId]) {
-      io.to(roomId).emit("game-started", rooms[roomId].gameId,cardsData);
+      io.to(roomId).emit("game-started", rooms[roomId].gameId, roomCards[roomId]);
       // Implement game start logic here (e.g., shuffle and distribute cards)
-      console.log(roomId);
     } else {
       console.log(`Room with ID ${roomId} does not exist.`);
     }
@@ -63,6 +64,7 @@ io.on("connection", (socket) => {
   socket.on("flip-card", (roomId, playerName, cardId) => {
     io.to(roomId).emit("card-flipped", playerName, cardId);
   });
+
   socket.on("disconnect", () => {
     totalUsers--;
 
