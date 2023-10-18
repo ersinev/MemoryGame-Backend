@@ -1,9 +1,10 @@
+// server.js
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
-
-const {cardsData}= require('./cards')
+const { generateUniqueCards } = require("./cards"); // Import the card generation logic
 
 const app = express();
 const server = http.createServer(app);
@@ -24,7 +25,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 let totalUsers = 0;
-
 
 io.on("connection", (socket) => {
   console.log("A user connected");
@@ -48,26 +48,15 @@ io.on("connection", (socket) => {
 
     if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
       rooms[roomId].gameStarted = true;
-      io.to(roomId).emit("game-started", rooms[roomId].gameId , cardsData);
+
+      // Generate unique cards for this room
+      const cardsData = generateUniqueCards();
+      
+      io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
       // Implement game start logic here (e.g., shuffle and distribute cards)
     }
   });
-  
-  socket.on("start-game", (roomId, cardsData) => {
-    if (rooms[roomId]) {
-      // Instead of pushing to shuffledCards, assign it directly
-      // Clear the array
-      
-      io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
-      console.log(`Game started in room ${roomId}`);
-    } else {
-      console.log(`Room with ID ${roomId} does not exist.`);
-    }
-  });
 
-  socket.on("flip-card", (roomId, playerName, cardId) => {
-    io.to(roomId).emit("card-flipped", playerName, cardId);
-  });
   socket.on("disconnect", () => {
     totalUsers--;
 
