@@ -1,5 +1,3 @@
-// server.js
-
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
@@ -30,22 +28,20 @@ io.on("connection", (socket) => {
   console.log("A user connected");
   totalUsers++;
   console.log(`---------Total Online Users: ${totalUsers}--------------`);
-  
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
-    console.log(rooms)
+
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
         gameId: generateUniqueId(roomId),
         gameStarted: false,
+        currentTurn: null,
       };
     }
 
     rooms[roomId].players.push({ id: socket.id, name: playerName });
-
-    
 
     io.to(roomId).emit("player-joined", rooms[roomId].players);
 
@@ -54,9 +50,8 @@ io.on("connection", (socket) => {
 
       // Generate unique cards for this room
       const cardsData = generateUniqueCards();
-      
+
       io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
-      // Implement game start logic here (e.g., shuffle and distribute cards)
     }
   });
 
@@ -66,16 +61,18 @@ io.on("connection", (socket) => {
     console.log("A user disconnected");
     console.log(`---------Total Online Users: ${totalUsers}--------------`);
 
-    const roomId = Object.keys(socket.rooms)[1];
-    if (roomId && rooms[roomId]) {
-      const playerIndex = rooms[roomId].players.findIndex(
-        (player) => player.id === socket.id
-      );
-      if (playerIndex !== -1) {
-        rooms[roomId].players.splice(playerIndex, 1);
-        io.to(roomId).emit("player-left", rooms[roomId].players);
+    const roomIds = Object.keys(socket.rooms);
+    roomIds.forEach((roomId) => {
+      if (rooms[roomId]) {
+        const playerIndex = rooms[roomId].players.findIndex(
+          (player) => player.id === socket.id
+        );
+        if (playerIndex !== -1) {
+          rooms[roomId].players.splice(playerIndex, 1);
+          io.to(roomId).emit("player-left", rooms[roomId].players);
+        }
       }
-    }
+    });
   });
 });
 
@@ -83,7 +80,6 @@ function generateUniqueId(roomId) {
   // Implement your logic to generate unique IDs here
   return roomId + "_gameId";
 }
-
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
