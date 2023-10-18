@@ -30,10 +30,11 @@ io.on("connection", (socket) => {
   console.log("A user connected");
   totalUsers++;
   console.log(`---------Total Online Users: ${totalUsers}--------------`);
+  
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
-
+    console.log(rooms)
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
@@ -43,6 +44,8 @@ io.on("connection", (socket) => {
     }
 
     rooms[roomId].players.push({ id: socket.id, name: playerName });
+
+    
 
     io.to(roomId).emit("player-joined", rooms[roomId].players);
 
@@ -80,6 +83,7 @@ function generateUniqueId(roomId) {
   // Implement your logic to generate unique IDs here
   return roomId + "_gameId";
 }
+
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
