@@ -2,7 +2,7 @@ const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
-const { generateUniqueCards } = require("./cards"); // Import the card generation logic
+const { generateUniqueCards } = require("./cards"); 
 
 const app = express();
 const server = http.createServer(app);
