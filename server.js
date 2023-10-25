@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
 });
 
 function generateUniqueId(roomId) {
-  // Implement your logic to generate unique IDs here
+  
   return roomId + "_gameId";
 }
 
