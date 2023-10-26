@@ -37,7 +37,7 @@ io.on("connection", (socket) => {
         players: [],
         gameId: generateUniqueId(roomId),
         gameStarted: false,
-        currentTurn: null,
+        currentTurn: null, 
       };
     }
 
@@ -52,6 +52,9 @@ io.on("connection", (socket) => {
       const cardsData = generateUniqueCards();
 
       io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
+
+      // Set the initial turn to the first player in the room
+      rooms[roomId].currentTurn = rooms[roomId].players[0].id;
     }
   });
 
@@ -70,6 +73,15 @@ io.on("connection", (socket) => {
         if (playerIndex !== -1) {
           rooms[roomId].players.splice(playerIndex, 1);
           io.to(roomId).emit("player-left", rooms[roomId].players);
+
+          // If the player leaving had the current turn, rotate the turn
+          if (rooms[roomId].currentTurn === socket.id) {
+            const currentIndex = rooms[roomId].players.findIndex(
+              (player) => player.id === socket.id
+            );
+            const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
+            rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
+          }
         }
       }
     });
