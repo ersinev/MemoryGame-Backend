@@ -1,8 +1,10 @@
+// server.js
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
-const { generateUniqueCards } = require("./cards"); 
+const { generateUniqueCards } = require("./cards");
 
 const app = express();
 const server = http.createServer(app);
@@ -16,10 +18,13 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
+const turns = {}; 
+
 const corsOptions = {
   origin: "http://localhost:3000",
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
+
 app.use(cors(corsOptions));
 
 let totalUsers = 0;
@@ -29,6 +34,14 @@ io.on("connection", (socket) => {
   totalUsers++;
   console.log(`---------Total Online Users: ${totalUsers}--------------`);
 
+  socket.on("check-room", (roomId, callback) => {
+    if (rooms[roomId]) {
+      callback(true, rooms[roomId].gameStarted);
+    } else {
+      callback(false, false);
+    }
+  });
+
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
 
@@ -37,24 +50,37 @@ io.on("connection", (socket) => {
         players: [],
         gameId: generateUniqueId(roomId),
         gameStarted: false,
-        currentTurn: null, 
+        currentTurn: null,
       };
     }
 
-    rooms[roomId].players.push({ id: socket.id, name: playerName });
+    const existingPlayer = rooms[roomId].players.find(
+      (player) => player.id === socket.id
+    );
 
-    io.to(roomId).emit("player-joined", rooms[roomId].players);
+    if (!existingPlayer) {
+      rooms[roomId].players.push({ id: socket.id, name: playerName });
+      io.to(roomId).emit("player-joined", rooms[roomId].players);
 
-    if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
-      rooms[roomId].gameStarted = true;
+      if (rooms[roomId].players.length === 2 && !rooms[roomId].gameStarted) {
+        rooms[roomId].gameStarted = true;
+        const cardsData = generateUniqueCards();
+        io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
+        rooms[roomId].currentTurn = rooms[roomId].players[0].id;
+        turns[roomId] = rooms[roomId].currentTurn;
+      }
+    }
+  });
 
-      // Generate unique cards for this room
-      const cardsData = generateUniqueCards();
-
-      io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
-
-      // Set the initial turn to the first player in the room
-      rooms[roomId].currentTurn = rooms[roomId].players[0].id;
+  socket.on("end-turn", (roomId) => {
+    if (rooms[roomId] && turns[roomId] === socket.id) {
+      const currentIndex = rooms[roomId].players.findIndex(
+        (player) => player.id === socket.id
+      );
+      const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
+      const newTurn = rooms[roomId].players[nextIndex].id;
+      turns[roomId] = newTurn;
+      io.to(roomId).emit("turn-change", newTurn);
     }
   });
 
@@ -74,24 +100,23 @@ io.on("connection", (socket) => {
           rooms[roomId].players.splice(playerIndex, 1);
           io.to(roomId).emit("player-left", rooms[roomId].players);
 
-          // If the player leaving had the current turn, rotate the turn
           if (rooms[roomId].currentTurn === socket.id) {
             const currentIndex = rooms[roomId].players.findIndex(
               (player) => player.id === socket.id
             );
             const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
             rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
+            turns[roomId] = rooms[roomId].currentTurn;
           }
         }
       }
     });
   });
-});
 
-function generateUniqueId(roomId) {
-  
-  return roomId + "_gameId";
-}
+  function generateUniqueId(roomId) {
+    return roomId + "_gameId";
+  }
+});
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
