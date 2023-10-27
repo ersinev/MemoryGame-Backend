@@ -10,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Replace with your frontend URL
+    origin: "http://localhost:3000", // frontend URL
     methods: ["GET", "POST"],
   },
 });
