@@ -1,5 +1,3 @@
-// server.js
-
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
@@ -18,7 +16,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
-const turns = {}; 
+const turnInfo = {}; // Define turnInfo to store the current turn in each room
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -67,20 +65,21 @@ io.on("connection", (socket) => {
         const cardsData = generateUniqueCards();
         io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
-        turns[roomId] = rooms[roomId].currentTurn;
+        turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+        io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
   });
 
   socket.on("end-turn", (roomId) => {
-    if (rooms[roomId] && turns[roomId] === socket.id) {
+    if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
       const currentIndex = rooms[roomId].players.findIndex(
         (player) => player.id === socket.id
       );
       const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
-      const newTurn = rooms[roomId].players[nextIndex].id;
-      turns[roomId] = newTurn;
-      io.to(roomId).emit("turn-change", newTurn);
+      rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
+      turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+      io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
   });
 
@@ -106,7 +105,8 @@ io.on("connection", (socket) => {
             );
             const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
             rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
-            turns[roomId] = rooms[roomId].currentTurn;
+            turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+            io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
           }
         }
       }
