@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // frontend URL
+    origin: "http://localhost:3000", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -17,6 +17,7 @@ const PORT = process.env.PORT || 5000;
 
 const rooms = {};
 const turnInfo = {}; // Define turnInfo to store the current turn in each room
+const gameStates = {}; // Maintain game state for each room
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -69,6 +70,20 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
+  });
+
+  socket.on("flip-card", (roomId, playerName, cardId) => {
+    // Update the game state for the specified room
+    if (!gameStates[roomId]) {
+      gameStates[roomId] = {
+        turnedCards: [],
+        matchedPairs: [],
+      };
+    }
+    gameStates[roomId].turnedCards.push({ playerName, cardId });
+
+    // Broadcast the updated game state to all players in the room
+    io.to(roomId).emit("update-game-state", gameStates[roomId]);
   });
 
   socket.on("end-turn", (roomId) => {
