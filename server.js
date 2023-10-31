@@ -120,7 +120,7 @@ io.on("connection", (socket) => {
             );
             const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
             rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
-            turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+            turnInfo[roomId] = rooms[roomId].currentTurn; 
             io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
           }
         }
