@@ -16,8 +16,8 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
-const turnInfo = {}; // Define turnInfo to store the current turn in each room
-const gameStates = {}; // Maintain game state for each room
+const turnInfo = {}; 
+const gameStates = {};
 
 const corsOptions = {
   origin: "http://localhost:3000",
@@ -120,7 +120,7 @@ io.on("connection", (socket) => {
             );
             const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
             rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
-            turnInfo[roomId] = rooms[roomId].currentTurn; 
+            turnInfo[roomId] = rooms[roomId].currentTurn;   
             io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
           }
         }
