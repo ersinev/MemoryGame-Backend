@@ -1,3 +1,5 @@
+// server.js
+
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
@@ -8,7 +10,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Frontend URL          
+    origin: "http://localhost:3000", // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -16,7 +18,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const rooms = {};
-const turnInfo = {}; 
+const turnInfo = {};
 const gameStates = {};
 
 const corsOptions = {
@@ -61,19 +63,25 @@ io.on("connection", (socket) => {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
 
-      if (rooms[roomId].players.length === 2 && !rooms[roomId].gameStarted) {
+      if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
         rooms[roomId].gameStarted = true;
         const cardsData = generateUniqueCards();
         io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
-        turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+        turnInfo[roomId] = rooms[roomId].currentTurn;
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
+      }
+
+      if (!gameStates[roomId]) {
+        gameStates[roomId] = {
+          turnedCards: [],
+          matchedPairs: [],
+        };
       }
     }
   });
 
   socket.on("flip-card", (roomId, playerName, cardId) => {
-    // Update the game state for the specified room
     if (!gameStates[roomId]) {
       gameStates[roomId] = {
         turnedCards: [],
@@ -81,19 +89,17 @@ io.on("connection", (socket) => {
       };
     }
     gameStates[roomId].turnedCards.push({ playerName, cardId });
-
-    // Broadcast the updated game state to all players in the room
     io.to(roomId).emit("update-game-state", gameStates[roomId]);
   });
 
   socket.on("end-turn", (roomId) => {
     if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
-      const currentIndex = rooms[roomId].players.findIndex(
+      const currentTurnIndex = rooms[roomId].players.findIndex(
         (player) => player.id === socket.id
       );
-      const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
-      rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
-      turnInfo[roomId] = rooms[roomId].currentTurn; // Update the turn information
+      const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
+      rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
+      turnInfo[roomId] = rooms[roomId].currentTurn;
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
   });
@@ -120,7 +126,7 @@ io.on("connection", (socket) => {
             );
             const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
             rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
-            turnInfo[roomId] = rooms[roomId].currentTurn;   
+            turnInfo[roomId] = rooms[roomId].currentTurn;
             io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
           }
         }
