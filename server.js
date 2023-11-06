@@ -1,5 +1,3 @@
-// server.js
-
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
@@ -63,8 +61,9 @@ io.on("connection", (socket) => {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
 
-      if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
+      if (rooms[roomId].players.length >= 4 && !rooms[roomId].gameStarted) {
         rooms[roomId].gameStarted = true;
+        // Generate the card data and send it to all players in the room
         const cardsData = generateUniqueCards();
         io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
