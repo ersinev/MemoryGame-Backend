@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", // Frontend URL
+    origin: ["http://localhost:3000","http://localhost:3000/admin"], // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -20,7 +20,7 @@ const turnInfo = {};
 const gameStates = {};
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000","http://localhost:3000/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 
@@ -28,10 +28,21 @@ app.use(cors(corsOptions));
 
 let totalUsers = 0;
 
+// Store online users and room data
+const onlineUsers = [];
+const adminRoomData = {};
+
 io.on("connection", (socket) => {
   console.log("A user connected");
   totalUsers++;
   console.log(`---------Total Online Users: ${totalUsers}--------------`);
+
+  // Add the user to the onlineUsers array
+  onlineUsers.push(socket.id);
+
+  // Emit the updated onlineUsers array to the admin room
+  io.to("admin").emit("online-users", onlineUsers);
+  io.to("admin").emit("room-data", rooms);
 
   socket.on("check-room", (roomId, callback) => {
     if (rooms[roomId]) {
@@ -107,6 +118,14 @@ io.on("connection", (socket) => {
 
     console.log("A user disconnected");
     console.log(`---------Total Online Users: ${totalUsers}--------------`);
+
+    // Remove the user from the onlineUsers array
+    const userIndex = onlineUsers.indexOf(socket.id);
+    if (userIndex !== -1) {
+      console.log("dasdsadasd")
+      onlineUsers.splice(userIndex, 1);
+      io.to("admin").emit("online-users", onlineUsers);
+    }
 
     const roomIds = Object.keys(socket.rooms);
     roomIds.forEach((roomId) => {
