@@ -61,21 +61,20 @@ io.on("connection", (socket) => {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
 
-      if (rooms[roomId].players.length >= 4 && !rooms[roomId].gameStarted) {
-        rooms[roomId].gameStarted = true;
+      if (rooms[roomId].players.length >= 2) {
+        // Reset the game state
+        rooms[roomId].gameStarted = false;
+        gameStates[roomId] = {
+          turnedCards: [],
+          matchedPairs: [],
+        };
+
         // Generate the card data and send it to all players in the room
         const cardsData = generateUniqueCards();
         io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
         turnInfo[roomId] = rooms[roomId].currentTurn;
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
-      }
-
-      if (!gameStates[roomId]) {
-        gameStates[roomId] = {
-          turnedCards: [],
-          matchedPairs: [],
-        };
       }
     }
   });
