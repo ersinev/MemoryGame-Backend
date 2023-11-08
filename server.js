@@ -40,9 +40,7 @@ io.on("connection", (socket) => {
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
 
-  // Emit the updated onlineUsers array to the admin room
-  io.to("admin").emit("online-users", onlineUsers);
-  io.to("admin").emit("room-data", rooms);
+ 
 
   socket.on("check-room", (roomId, callback) => {
     if (rooms[roomId]) {
@@ -68,6 +66,11 @@ io.on("connection", (socket) => {
       (player) => player.id === socket.id
     );
 
+     // Emit the updated onlineUsers array to the admin room
+  io.to("admin").emit("online-users", onlineUsers);
+  io.to("admin").emit("room-data", rooms);
+ 
+
     if (!existingPlayer) {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
@@ -89,6 +92,7 @@ io.on("connection", (socket) => {
       }
     }
   });
+
 
   socket.on("flip-card", (roomId, playerName, cardId) => {
     if (!gameStates[roomId]) {
@@ -122,7 +126,7 @@ io.on("connection", (socket) => {
     // Remove the user from the onlineUsers array
     const userIndex = onlineUsers.indexOf(socket.id);
     if (userIndex !== -1) {
-      console.log("dasdsadasd")
+      
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
