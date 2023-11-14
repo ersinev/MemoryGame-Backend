@@ -98,8 +98,14 @@ io.on("connection", (socket) => {
     }
     gameStates[roomId].turnedCards.push({ playerName, cardId });
     io.to(roomId).emit("update-game-state", gameStates[roomId]);
-    io.to(roomId).emit("flip-card", playerName, cardId);
-    
+
+    // Broadcast the flip event to all clients in the same room, excluding the sender
+    socket.to(roomId).emit("flip-card", playerName, cardId);
+  });
+
+  socket.on("close-cards", (roomId, cardIds) => {
+    // Broadcast the close event to all clients in the same room, excluding the sender
+    socket.to(roomId).emit("close-cards", cardIds);
   });
 
   socket.on("end-turn", (roomId) => {
