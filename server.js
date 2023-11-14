@@ -8,7 +8,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000","http://localhost:3000/admin"], // Frontend URL
+    origin: ["http://localhost:3000", "http://localhost:3000/admin"], // Frontend URL
     methods: ["GET", "POST"],
   },
 });
@@ -20,7 +20,7 @@ const turnInfo = {};
 const gameStates = {};
 
 const corsOptions = {
-  origin: ["http://localhost:3000","http://localhost:3000/admin"],
+  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 
@@ -30,7 +30,6 @@ let totalUsers = 0;
 
 // Store online users and room data
 const onlineUsers = [];
-const adminRoomData = {};
 
 io.on("connection", (socket) => {
   console.log("A user connected");
@@ -64,6 +63,7 @@ io.on("connection", (socket) => {
       };
     }
 
+    // Check if the player with the same socket ID already exists
     const existingPlayer = rooms[roomId].players.find(
       (player) => player.id === socket.id
     );
@@ -72,15 +72,11 @@ io.on("connection", (socket) => {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
 
-      if (rooms[roomId].players.length >= 2) {
+      if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
         // Reset the game state
-        rooms[roomId].gameStarted = false;
-        gameStates[roomId] = {
-          turnedCards: [],
-          matchedPairs: [],
-        };
+        rooms[roomId].gameStarted = true;
 
-        // Generate the card data and send it to all players in the room
+        // Emit the "game-started" event only once when the game starts
         const cardsData = generateUniqueCards();
         io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
@@ -88,6 +84,9 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
+
+    // Emit the updated room data after player joining
+    io.to("admin").emit("room-data", rooms);
   });
 
   socket.on("flip-card", (roomId, playerName, cardId) => {
@@ -99,6 +98,8 @@ io.on("connection", (socket) => {
     }
     gameStates[roomId].turnedCards.push({ playerName, cardId });
     io.to(roomId).emit("update-game-state", gameStates[roomId]);
+    io.to(roomId).emit("flip-card", playerName, cardId);
+    
   });
 
   socket.on("end-turn", (roomId) => {
@@ -106,8 +107,10 @@ io.on("connection", (socket) => {
       const currentTurnIndex = rooms[roomId].players.findIndex(
         (player) => player.id === socket.id
       );
-      const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
-      rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
+      const nextTurnIndex =
+        (currentTurnIndex + 1) % rooms[roomId].players.length;
+      rooms[roomId].currentTurn =
+        rooms[roomId].players[nextTurnIndex].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
@@ -117,12 +120,14 @@ io.on("connection", (socket) => {
     totalUsers--;
 
     console.log("A user disconnected");
-    console.log(`---------Total Online Users: ${totalUsers}--------------`);
+    console.log(
+      `---------Total Online Users: ${totalUsers}--------------`
+    );
 
     // Remove the user from the onlineUsers array
     const userIndex = onlineUsers.indexOf(socket.id);
     if (userIndex !== -1) {
-      console.log("dasdsadasd")
+      console.log("dasdsadasd");
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
@@ -141,10 +146,15 @@ io.on("connection", (socket) => {
             const currentIndex = rooms[roomId].players.findIndex(
               (player) => player.id === socket.id
             );
-            const nextIndex = (currentIndex + 1) % rooms[roomId].players.length;
-            rooms[roomId].currentTurn = rooms[roomId].players[nextIndex].id;
+            const nextIndex =
+              (currentIndex + 1) % rooms[roomId].players.length;
+            rooms[roomId].currentTurn =
+              rooms[roomId].players[nextIndex].id;
             turnInfo[roomId] = rooms[roomId].currentTurn;
-            io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
+            io.to(roomId).emit(
+              "turn-change",
+              rooms[roomId].currentTurn
+            );
           }
         }
       }
