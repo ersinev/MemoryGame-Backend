@@ -99,25 +99,28 @@ io.on("connection", (socket) => {
     gameStates[roomId].turnedCards.push({ playerName, cardId });
     io.to(roomId).emit("update-game-state", gameStates[roomId]);
 
-    // Broadcast the flip event to all clients in the same room, excluding the sender
-    socket.to(roomId).emit("flip-card", playerName, cardId);
+    // Broadcast the flip event to all clients in the same room, including the sender
+    io.to(roomId).emit("flip-card", playerName, cardId);
   });
 
   socket.on("close-cards", (roomId, cardIds) => {
     // Update the game state to close the specified cards
     io.to(roomId).emit("close-cards", cardIds);
-  
+
     // Update the game state for all users
     if (gameStates[roomId]) {
       gameStates[roomId].turnedCards = gameStates[roomId].turnedCards.filter(
         (turn) => !cardIds.includes(turn.cardId)
       );
-  
+
       // Update the matchedPairs array for the closed cards
       gameStates[roomId].matchedPairs = gameStates[roomId].matchedPairs.concat(
-        cardIds.map((cardId) => gameStates[roomId].turnedCards.find((turn) => turn.cardId === cardId).playerName)
+        cardIds.map((cardId) =>
+          gameStates[roomId].turnedCards.find((turn) => turn.cardId === cardId)
+            .playerName
+        )
       );
-  
+
       io.to(roomId).emit("update-game-state", gameStates[roomId]);
     }
   });
