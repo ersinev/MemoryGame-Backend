@@ -60,34 +60,39 @@ io.on("connection", (socket) => {
         gameId: generateUniqueId(roomId),
         gameStarted: false,
         currentTurn: null,
+        gameData: {
+          cardsData: [],
+          turnedCards: [],
+          matchedPairs: [],
+        },
       };
+
+      // Generate unique cards for the room
+      rooms[roomId].gameData.cardsData = generateUniqueCards();
     }
 
-    // Check if the player with the same socket ID already exists
-    const existingPlayer = rooms[roomId].players.find(
-      (player) => player.id === socket.id
-    );
+    const existingPlayer = rooms[roomId].players.find((player) => player.id === socket.id);
 
     if (!existingPlayer) {
       rooms[roomId].players.push({ id: socket.id, name: playerName });
       io.to(roomId).emit("player-joined", rooms[roomId].players);
 
       if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
-        // Reset the game state
         rooms[roomId].gameStarted = true;
+        io.to(roomId).emit("game-started", rooms[roomId].gameId, rooms[roomId].gameData.cardsData);
 
-        // Emit the "game-started" event only once when the game starts
-        const cardsData = generateUniqueCards();
-        io.to(roomId).emit("game-started", rooms[roomId].gameId, cardsData);
         rooms[roomId].currentTurn = rooms[roomId].players[0].id;
         turnInfo[roomId] = rooms[roomId].currentTurn;
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
 
-    // Emit the updated room data after player joining
+    io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
     io.to("admin").emit("room-data", rooms);
   });
+
+
+
 
   socket.on("flip-card", (roomId, playerName, cardId) => {
     if (!gameStates[roomId]) {
