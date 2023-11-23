@@ -118,6 +118,7 @@ io.on("connection", (socket) => {
         matchedPairs: [],
       };
     }
+
     gameStates[roomId].turnedCards.push({ playerName, cardId });
     io.to(roomId).emit("update-game-state", gameStates[roomId]);
 
@@ -128,14 +129,11 @@ io.on("connection", (socket) => {
 
   socket.on("close-cards", (roomId, cardIds) => {
     // Update the game state to close the specified cards
-    io.to(roomId).emit("close-cards", cardIds);
-
-    // Update the game state for all users
     if (gameStates[roomId]) {
       gameStates[roomId].turnedCards = gameStates[roomId].turnedCards.filter(
         (turn) => !cardIds.includes(turn.cardId)
       );
-
+  
       // Update the matchedPairs array for the closed cards
       gameStates[roomId].matchedPairs = gameStates[roomId].matchedPairs.concat(
         cardIds.map((cardId) =>
@@ -143,10 +141,18 @@ io.on("connection", (socket) => {
             .playerName
         )
       );
-
+  
+      // Broadcast the updated game state to all clients in the room
       io.to(roomId).emit("update-game-state", gameStates[roomId]);
     }
+  
+    // Broadcast the close-cards event to all clients in the same room
+    io.to(roomId).emit("close-cards", gameStates[roomId]);
+  
+    // Add this line to ensure synchronization
+    socket.broadcast.to(roomId).emit("update-game-state", gameStates[roomId]);
   });
+  
 
   socket.on("end-turn", (roomId) => {
     if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
@@ -156,6 +162,8 @@ io.on("connection", (socket) => {
       const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
       rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
+
+      // Broadcast the turn-change event to all clients in the room
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
   });
@@ -199,22 +207,17 @@ io.on("connection", (socket) => {
   function startGame(roomId) {
     if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
       
-      // Check if the cards are already shuffled for this room
-      if (!shuffledCardsMap[roomId]) {
-        const shuffledCards = generateUniqueCards();
-        shuffleCards(shuffledCards);
-        shuffledCardsMap[roomId] = shuffledCards;
-      }
-
-      // Update game state with the pre-shuffled cards
-      rooms[roomId].gameData.cardsData = shuffledCardsMap[roomId];
-
+      const shuffledCards = shuffledCardsMap[roomId];
+  
+      // Update game state with shuffled cards
+      rooms[roomId].gameData.cardsData = shuffledCards;
+  
       // Set game started flag
       rooms[roomId].gameStarted = true;
-
+  
       // Broadcast the "game-started" event to all clients in the room
-      io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCardsMap[roomId]);
-
+      io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCards);
+  
       // Set the current turn and emit turn change event
       rooms[roomId].currentTurn = rooms[roomId].players[0].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
@@ -222,7 +225,7 @@ io.on("connection", (socket) => {
     } else {
       // Inform the new player that the game has already started
       io.to(socket.id).emit("game-already-started", rooms[roomId].gameId);
-
+  
       // Update the new player's game state with the current game data
       io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
     }
