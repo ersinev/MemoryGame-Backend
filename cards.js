@@ -1,6 +1,9 @@
-// cards.js
+const seedrandom = require('seedrandom');
 
-const generateUniqueCards = () => {
+const generateUniqueCards = (seed) => {
+  // Set the seed for the random number generator
+  const rng = seedrandom(seed);
+
   const cards = [];
   for (var i = 1; i <= 48; i += 4) {
     const imageIndex = i;
@@ -30,9 +33,10 @@ const generateUniqueCards = () => {
     );
   }
 
+  // Use the seeded random number generator
   return cards.map((card) => ({
     ...card,
-    order: Math.floor(Math.random() * 12),
+    order: Math.floor(rng() * 12),
     isFlipped: false,
   }));
 };
