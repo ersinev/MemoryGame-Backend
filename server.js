@@ -77,7 +77,7 @@ io.on("connection", (socket) => {
     }
 
     // Broadcast the "game-started" event to all clients in the room
-    io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCardsMap[roomId]);
+    io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCardsMap[roomId], Date.now());
 
     const existingPlayer = rooms[roomId].players.find(
       (player) => player.id === socket.id
