@@ -29,7 +29,6 @@ app.use(cors(corsOptions));
 
 let totalUsers = 0;
 
-// Store online users and room data
 const onlineUsers = [];
 
 io.on("connection", (socket) => {
