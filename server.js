@@ -12,6 +12,11 @@ const io = socketIo(server, {
     methods: ["GET", "POST"],
   },
 });
+const corsOptions = {
+  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+};
+app.use(cors(corsOptions));
 
 const PORT = process.env.PORT || 5000;
 
@@ -19,17 +24,12 @@ const rooms = {};
 const turnInfo = {};
 const gameStates = {};
 const shuffledCardsMap = {};
-
-const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-};
-
-app.use(cors(corsOptions));
-
 let totalUsers = 0;
-
 const onlineUsers = [];
+
+
+
+
 
 io.on("connection", (socket) => {
   console.log("A user connected");
@@ -43,13 +43,7 @@ io.on("connection", (socket) => {
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
 
-  socket.on("check-room", (roomId, callback) => {
-    if (rooms[roomId]) {
-      callback(true, rooms[roomId].gameStarted);
-    } else {
-      callback(false, false);
-    }
-  });
+ 
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
