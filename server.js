@@ -141,6 +141,14 @@ io.on("connection", (socket) => {
     }
 });
 
+socket.on("update-game-state",(roomId,playerName,cardId)=>{
+  gameStates[roomId].turnedCards.push({ playerName, cardId })
+  // io.to(roomId).emit("update-game-state", gameStates[roomId]);
+  // io.to(roomId).emit("flip-card", playerName, cardId)
+
+
+  //CHECK HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+})
 
 socket.on("end-turn", (roomId) => {
   if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
