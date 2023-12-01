@@ -101,7 +101,7 @@ io.on("connection", (socket) => {
     }
   });
 
-  socket.on("flip-card", (roomId, playerName, cardId) => {
+  socket.on("flip-card", (roomId, playerName, cardId, selectedCards) => {
     if (!gameStates[roomId]) {
       gameStates[roomId] = {
         turnedCards: [],
@@ -110,7 +110,9 @@ io.on("connection", (socket) => {
     }
   
     gameStates[roomId].turnedCards.push({ playerName, cardId });
-    io.to(roomId).emit("update-game-state", gameStates[roomId]);
+    //io.to(roomId).emit("update-game-state", gameStates[roomId]);
+   
+    console.log("SELECTED CARDS",selectedCards)
   
     // Broadcast the flip event to all clients in the same room,
     // including the sender
