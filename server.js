@@ -115,8 +115,9 @@ io.on("connection", (socket) => {
     console.log("SELECTED CARDS",selectedCards)
   
     // Broadcast the flip event to all clients in the same room,
-    // including the sender
-    io.to(roomId).emit("flip-card", playerName, cardId);
+    // including the sender 
+    
+    io.to(roomId).emit("flip-card", playerName, cardId, selectedCards);
   });
   
 
