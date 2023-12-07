@@ -152,7 +152,8 @@ socket.on("update-game-state",(roomId,playerName,cardId)=>{
   //CHECK HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 })
 
-socket.on("end-turn", (roomId) => {
+// Inside the "end-turn" event handler
+socket.on("end-turn", (roomId, selectedCards) => {
   if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
     const currentTurnIndex = rooms[roomId].players.findIndex(
       (player) => player.id === socket.id
@@ -163,31 +164,38 @@ socket.on("end-turn", (roomId) => {
 
     // Check if the two flipped cards match
     const turnedCards = gameStates[roomId].turnedCards;
-    if (turnedCards.length === 2 && turnedCards[0].cardId === turnedCards[1].cardId) {
+    if (selectedCards.length === 2 && selectedCards[0].key === selectedCards[1].key) {
       // The cards match, so keep them open and update points
-      gameStates[roomId].turnedCards.push(turnedCards[0].cardId);
-      gameStates[roomId].matchedPairs.push(turnedCards[0].key);
+      const matchedCardKey = selectedCards[0].key;
 
-      // Award points to the current player
-      const currentPlayerId = rooms[roomId].currentTurn;
-      rooms[roomId].points[currentPlayerId] = (rooms[roomId].points[currentPlayerId] || 0) + 1;
+      if (!gameStates[roomId].matchedPairs.includes(matchedCardKey)) {
+        gameStates[roomId].turnedCards.push({ playerName: socket.id, cardId: matchedCardKey });
+        gameStates[roomId].matchedPairs.push(matchedCardKey);
 
-      io.to(roomId).emit("update-game-state", gameStates[roomId]);
-      io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
+        // Award points to the current player
+        const currentPlayerId = socket.id;
+        rooms[roomId].points[currentPlayerId] = (rooms[roomId].points[currentPlayerId] || 0) + 1;
+
+        io.to(roomId).emit("update-game-state", gameStates[roomId]);
+        io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
+        console.log("Matched cards, points awarded, and turn changed.");
+      }
     } else {
       // The cards do not match, so close them
       const closedCardIds = turnedCards.map((turn) => turn.cardId);
       io.to(roomId).emit("close-cards", closedCardIds);
+      console.log("Mismatched cards closed.");
 
       // Update the game state to clear the turned cards
-      gameStates[roomId].turnedCards = [];
+     
       io.to(roomId).emit("update-game-state", gameStates[roomId]);
+      io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
 
     // Broadcast the turn-change event to all clients in the room
-    io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
   }
 });
+
 
 socket.on("update-points", (roomId, updatedPoints) => {
   // Update server-side points data
