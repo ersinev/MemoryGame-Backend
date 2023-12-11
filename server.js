@@ -143,14 +143,23 @@ io.on("connection", (socket) => {
     }
 });
 
-socket.on("update-game-state",(roomId,playerName,cardId)=>{
-  gameStates[roomId].turnedCards.push({ playerName, cardId })
-  // io.to(roomId).emit("update-game-state", gameStates[roomId]);
-  // io.to(roomId).emit("flip-card", playerName, cardId)
+socket.on("update-game-state", (roomId, playerName, cardId) => {
+  gameStates[roomId].turnedCards.push({ playerName, cardId });
 
+  // Emit the updated game state to all clients in the room
+  io.to(roomId).emit("update-game-state", gameStates[roomId]);
 
-  //CHECK HERE <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-})
+  // Check if the updated card is part of a matched pair
+  const matchedPair = gameStates[roomId].matchedPairs.find(
+    (matchedCardId) => matchedCardId === cardId
+  );
+
+  if (matchedPair) {
+    // If it's part of a matched pair, also emit the flip-card event
+    io.to(roomId).emit("flip-card", playerName, cardId);
+  }
+});
+
 
 // Inside the "end-turn" event handler
 socket.on("end-turn", (roomId, selectedCards) => {
@@ -160,7 +169,6 @@ socket.on("end-turn", (roomId, selectedCards) => {
     );
     const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
     rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
-    turnInfo[roomId] = rooms[roomId].currentTurn;
 
     // Check if the two flipped cards match
     const turnedCards = gameStates[roomId].turnedCards;
@@ -187,14 +195,13 @@ socket.on("end-turn", (roomId, selectedCards) => {
       console.log("Mismatched cards closed.");
 
       // Update the game state to clear the turned cards
-     
       io.to(roomId).emit("update-game-state", gameStates[roomId]);
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
-
-    // Broadcast the turn-change event to all clients in the room
   }
 });
+
+
 
 
 socket.on("update-points", (roomId, updatedPoints) => {
