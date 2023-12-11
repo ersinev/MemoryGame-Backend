@@ -189,10 +189,13 @@ socket.on("end-turn", (roomId, selectedCards) => {
         console.log("Matched cards, points awarded, and turn changed.");
       }
     } else {
-      // The cards do not match, so close them
-      const closedCardIds = turnedCards.map((turn) => turn.cardId);
-      io.to(roomId).emit("close-cards", closedCardIds);
-      console.log("Mismatched cards closed.");
+      // The cards do not match, so close only the unmatched cards
+      const unmatchedCardIds = selectedCards.map((card) => card.id);
+
+      // Emit the "close-cards" event to all clients in the room
+      io.to(roomId).emit("close-cards", unmatchedCardIds);
+
+      console.log("Unmatched cards closed.");
 
       // Update the game state to clear the turned cards
       io.to(roomId).emit("update-game-state", gameStates[roomId]);
@@ -200,6 +203,7 @@ socket.on("end-turn", (roomId, selectedCards) => {
     }
   }
 });
+
 
 
 
