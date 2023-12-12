@@ -8,12 +8,12 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     //http://localhost:3000
-    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app//admin"],
+    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
     methods: ["GET", "POST"],
   },
 });
 const corsOptions = {
-  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app//admin"],
+  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
