@@ -3,17 +3,17 @@ const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
 const { generateUniqueCards } = require("./cards");
-
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:3000/admin"],
+    //http://localhost:3000
+    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app//admin"],
     methods: ["GET", "POST"],
   },
 });
 const corsOptions = {
-  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
+  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app//admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
