@@ -160,8 +160,6 @@ io.on("connection", (socket) => {
     }
   });
 
-
-  // Inside the "end-turn" event handler
   socket.on("end-turn", (roomId, selectedCards) => {
     if (rooms[roomId] && rooms[roomId].currentTurn === socket.id) {
       const currentTurnIndex = rooms[roomId].players.findIndex(
@@ -204,10 +202,6 @@ io.on("connection", (socket) => {
     }
   });
 
-
-
-
-
   socket.on("update-points", (roomId, updatedPoints) => {
     // Update server-side points data
     rooms[roomId].points = updatedPoints;
@@ -227,6 +221,7 @@ io.on("connection", (socket) => {
     if (userIndex !== -1) {
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
+      io.to("admin").emit("room-data", rooms);
     }
 
     const roomIds = Object.keys(socket.rooms);
@@ -251,7 +246,6 @@ io.on("connection", (socket) => {
     return roomId + "_gameId";
   }
 
-  // Function to initialize the game
   function startGame(roomId) {
     if (rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
 
