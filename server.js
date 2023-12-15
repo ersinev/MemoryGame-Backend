@@ -112,7 +112,7 @@ io.on("connection", (socket) => {
     gameStates[roomId].turnedCards.push({ playerName, cardId });
     //io.to(roomId).emit("update-game-state", gameStates[roomId]);
 
-    console.log("SELECTED CARDS", selectedCards)
+    //console.log("SELECTED CARDS", selectedCards)
 
     // Broadcast the flip event to all clients in the same room,
     // including the sender
@@ -184,7 +184,7 @@ io.on("connection", (socket) => {
 
           io.to(roomId).emit("update-game-state", gameStates[roomId]);
           io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
-          console.log("Matched cards, points awarded, and turn changed.");
+          //console.log("Matched cards, points awarded, and turn changed.");
         }
       } else {
         // The cards do not match, so close only the unmatched cards
@@ -193,7 +193,7 @@ io.on("connection", (socket) => {
         // Emit the "close-cards" event to all clients in the room
         io.to(roomId).emit("close-cards", unmatchedCardIds);
 
-        console.log("Unmatched cards closed.");
+        //console.log("Unmatched cards closed.");
 
         // Update the game state to clear the turned cards
         io.to(roomId).emit("update-game-state", gameStates[roomId]);
