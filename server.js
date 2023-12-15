@@ -232,10 +232,13 @@ io.on("connection", (socket) => {
         );
         if (playerIndex !== -1) {
           rooms[roomId].players.splice(playerIndex, 1);
-
+    
+          // Update the admin panel with the latest room data
+          io.to("admin").emit("room-data", rooms);
+    
           // Call the startGame function when a player leaves
           startGame(roomId);
-
+    
           io.to(roomId).emit("player-left", rooms[roomId].players);
         }
       }
