@@ -5,7 +5,7 @@ const generateUniqueCards = (seed) => {
   const rng = seedrandom(seed);
 
   const cards = [];
-  for (var i = 1; i <= 48; i += 4) {
+  for (var i = 1; i <= 36; i += 4) {
     const imageIndex = i;
     const explanationIndex = i + 1;
 
