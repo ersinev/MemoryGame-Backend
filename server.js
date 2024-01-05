@@ -32,9 +32,9 @@ const onlineUsers = [];
 
 
 io.on("connection", (socket) => {
-  console.log("A user connected");
+  //console.log("A user connected");
   totalUsers++;
-  console.log(`---------Total Online Users: ${totalUsers}--------------`);
+  //console.log(`---------Total Online Users: ${totalUsers}--------------`);
 
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
@@ -213,8 +213,8 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     totalUsers--;
 
-    console.log("A user disconnected");
-    console.log(`---------Total Online Users: ${totalUsers}--------------`);
+    //console.log("A user disconnected");
+    //console.log(`---------Total Online Users: ${totalUsers}--------------`);
 
     // Remove the user from the onlineUsers array
     const userIndex = onlineUsers.indexOf(socket.id);
@@ -286,5 +286,5 @@ io.on("connection", (socket) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+  //console.log(`Server is running on port ${PORT}`);
 });
