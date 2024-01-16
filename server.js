@@ -10,12 +10,12 @@ const io = socketIo(server, {
     //
     //http://localhost:3000
     //https://itgaragememorygame.netlify.app
-    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+    origin: ["http://localhost:3000", "http://localhost:3000/admin"],
     methods: ["GET", "POST"],
   },
 });
 const corsOptions = {
-  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
@@ -183,9 +183,16 @@ io.on("connection", (socket) => {
           const currentPlayerId = socket.id;
           rooms[roomId].points[currentPlayerId] = (rooms[roomId].points[currentPlayerId] || 0) + 1;
 
+          // Broadcast the updated game state to all clients in the room
           io.to(roomId).emit("update-game-state", gameStates[roomId]);
+
+          // Emit the "matched-pairs" event after updating game state
+          io.to(roomId).emit("matched-pairs", gameStates[roomId].matchedPairs);
+
+          // Emit "turn-change" event to update the current turn
           io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
-          //console.log("Matched cards, points awarded, and turn changed.");
+
+          // console.log("Matched cards, points awarded, and turn changed.");
         }
       } else {
         // The cards do not match, so close only the unmatched cards
@@ -194,14 +201,16 @@ io.on("connection", (socket) => {
         // Emit the "close-cards" event to all clients in the room
         io.to(roomId).emit("close-cards", unmatchedCardIds);
 
-        //console.log("Unmatched cards closed.");
+        // console.log("Unmatched cards closed.");
 
         // Update the game state to clear the turned cards
         io.to(roomId).emit("update-game-state", gameStates[roomId]);
+        // Emit "turn-change" event to update the current turn
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
   });
+
 
   socket.on("update-points", (roomId, updatedPoints) => {
     // Update server-side points data
@@ -233,13 +242,13 @@ io.on("connection", (socket) => {
         );
         if (playerIndex !== -1) {
           rooms[roomId].players.splice(playerIndex, 1);
-    
+
           // Update the admin panel with the latest room data
           io.to("admin").emit("room-data", rooms);
-    
+
           // Call the startGame function when a player leaves
           startGame(roomId);
-    
+
           io.to(roomId).emit("player-left", rooms[roomId].players);
         }
       }
