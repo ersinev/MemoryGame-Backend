@@ -7,8 +7,8 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    //
-    //http://localhost:3000
+    ///
+    //http://localhost:3000 
     //https://itgaragememorygame.netlify.app
     origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
     methods: ["GET", "POST"],
