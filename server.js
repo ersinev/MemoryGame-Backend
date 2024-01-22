@@ -7,15 +7,15 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    ////
+    /////
     //http://localhost:3000 
     //https://itgaragememorygame.netlify.app
-    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+    origin: ["http://localhost:3000", "http://localhost:3000/admin"],
     methods: ["GET", "POST"],
   },
 });
 const corsOptions = {
-  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
@@ -220,6 +220,8 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("update-points", updatedPoints);
   });
 
+  
+
   socket.on("disconnect", () => {
     totalUsers--;
     console.log("A user disconnected");
@@ -256,8 +258,10 @@ io.on("connection", (socket) => {
               // Emit "turn-change" event to update the current turn
               io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
             } else {
-              // If there are no players left, reset the room to its initial state
-              rooms[roomId] = undefined;
+              // If there are no players left, delete the room
+              delete rooms[roomId];
+              delete shuffledCardsMap[roomId];
+              delete gameStates[roomId];
             }
           }
   
@@ -273,6 +277,7 @@ io.on("connection", (socket) => {
       }
     });
   });
+  
   
   
   function generateUniqueId(roomId) {
