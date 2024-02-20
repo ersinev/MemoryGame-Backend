@@ -35,11 +35,11 @@ const onlineUsers = [];
 io.on("connection", (socket) => {
   //console.log("A user connected");
   totalUsers++;
-  console.log(`---------Total Online Users: ${totalUsers}--------------`);
+  //console.log(`---------Total Online Users: ${totalUsers}--------------`);
 
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
-  console.log("connect part",onlineUsers)
+  //console.log("connect part",onlineUsers)
   // Emit the updated onlineUsers array to the admin room
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
@@ -224,7 +224,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     totalUsers--;
-    console.log("A user disconnected");
+    //console.log("A user disconnected");
   
     // Remove the user from the onlineUsers array
     const userIndex = onlineUsers.indexOf(socket.id);
@@ -233,7 +233,7 @@ io.on("connection", (socket) => {
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
-    console.log("disconnect part", onlineUsers);
+    //console.log("disconnect part", onlineUsers);
   
     // Find the rooms that the user was in
     Object.keys(rooms).forEach((roomId) => {
