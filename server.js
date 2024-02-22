@@ -10,12 +10,12 @@ const io = socketIo(server, {
     /////
     //http://localhost:3000 
     //https://itgaragememorygame.netlify.app
-    origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+    origin: ["http://localhost:3000", "http://localhost:3000/admin"],
     methods: ["GET", "POST"],
   },
 });
 const corsOptions = {
-  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
+  origin: ["http://localhost:3000", "http://localhost:3000/admin"],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
 };
 app.use(cors(corsOptions));
@@ -39,12 +39,26 @@ io.on("connection", (socket) => {
 
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
-  //console.log("connect part",onlineUsers)
-  // Emit the updated onlineUsers array to the admin room
+
+
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
+  //////////////////////////////------PING-SERVER-----////////////////////////////////////////
+  socket.on("ping", () => {
+    // Respond to the ping event with a pong event
+    socket.emit("pong");
+  });
 
+  
+  function sendPing() {
+    
+    socket.emit("ping");
+  }
 
+  // Send a ping to the server every 10 minutes (600,000 milliseconds)
+  setInterval(sendPing, 600000);
+
+  /////////////////////////////////////////////////////////////////////
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
@@ -220,21 +234,21 @@ io.on("connection", (socket) => {
     io.to(roomId).emit("update-points", updatedPoints);
   });
 
-  
+
 
   socket.on("disconnect", () => {
     totalUsers--;
     //console.log("A user disconnected");
-  
+
     // Remove the user from the onlineUsers array
     const userIndex = onlineUsers.indexOf(socket.id);
-  
+
     if (userIndex !== -1) {
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
     //console.log("disconnect part", onlineUsers);
-  
+
     // Find the rooms that the user was in
     Object.keys(rooms).forEach((roomId) => {
       // Check if the room exists and has players
@@ -242,10 +256,10 @@ io.on("connection", (socket) => {
         const playerIndex = rooms[roomId].players.findIndex(
           (player) => player.id === socket.id
         );
-  
+
         if (playerIndex !== -1) {
           const removedPlayer = rooms[roomId].players.splice(playerIndex, 1)[0];
-  
+
           // If the removed player has the current turn, pass the turn to the next player
           if (rooms[roomId].currentTurn === socket.id) {
             if (rooms[roomId].players.length > 0) {
@@ -254,7 +268,7 @@ io.on("connection", (socket) => {
               );
               const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
               rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
-  
+
               // Emit "turn-change" event to update the current turn
               io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
             } else {
@@ -264,10 +278,10 @@ io.on("connection", (socket) => {
               delete gameStates[roomId];
             }
           }
-  
+
           // Call the startGame function when a player leaves
           startGame(roomId);
-  
+
           // Check if the room exists before emitting events
           if (rooms[roomId]) {
             io.to(roomId).emit("player-left", rooms[roomId].players);
@@ -277,9 +291,9 @@ io.on("connection", (socket) => {
       }
     });
   });
-  
-  
-  
+
+
+
   function generateUniqueId(roomId) {
     return roomId + "_gameId";
   }
@@ -288,16 +302,16 @@ io.on("connection", (socket) => {
     // Check if the room exists and has players
     if (rooms[roomId] && rooms[roomId].players && rooms[roomId].players.length >= 2 && !rooms[roomId].gameStarted) {
       const shuffledCards = shuffledCardsMap[roomId];
-  
+
       // Update game state with shuffled cards
       rooms[roomId].gameData.cardsData = shuffledCards;
-  
+
       // Set game started flag
       rooms[roomId].gameStarted = true;
-  
+
       // Broadcast the "game-started" event to all clients in the room
       io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCards);
-  
+
       // Set the current turn and emit turn change event
       rooms[roomId].currentTurn = rooms[roomId].players[0].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
@@ -305,12 +319,12 @@ io.on("connection", (socket) => {
     } else {
       // Inform the new player that the game has already started
       io.to(socket.id).emit("game-already-started", rooms[roomId] ? rooms[roomId].gameId : null);
-  
+
       // Update the new player's game state with the current game data
       io.to(socket.id).emit("update-game-state", rooms[roomId] ? rooms[roomId].gameData : null);
     }
   }
-  
+
 
   // Kartları karıştıran fonksiyon
   function shuffleCards(cards) {
