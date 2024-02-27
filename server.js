@@ -5,6 +5,7 @@ const cors = require("cors");
 const { generateUniqueCards } = require("./cards");
 const app = express();
 const server = http.createServer(app);
+const { setInterval } = require('timers');
 const io = socketIo(server, {
   cors: {
     /////
@@ -40,6 +41,11 @@ io.on("connection", (socket) => {
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
 
+  function sendPing() {
+    socket.emit("ping");
+  }
+
+  setInterval(sendPing, 10 * 60 * 1000);
 
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
