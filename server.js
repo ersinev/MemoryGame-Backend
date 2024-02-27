@@ -45,7 +45,7 @@ io.on("connection", (socket) => {
     socket.emit("ping");
   }
 
-  setInterval(sendPing, 10 * 60 * 1000);
+  setInterval(sendPing, 25 * 60 * 1000);
 
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
@@ -56,13 +56,7 @@ io.on("connection", (socket) => {
   });
 
   
-  function sendPing() {
-    
-    socket.emit("ping");
-  }
 
-  // Send a ping to the server every 10 minutes (600,000 milliseconds)
-  setInterval(sendPing, 600000);
 
   /////////////////////////////////////////////////////////////////////
 
