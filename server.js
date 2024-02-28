@@ -41,19 +41,12 @@ io.on("connection", (socket) => {
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
 
-  function sendPing() {
-    socket.emit("ping");
-  }
-
-  setInterval(sendPing, 25 * 60 * 1000);
+  
 
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
   //////////////////////////////------PING-SERVER-----////////////////////////////////////////
-  socket.on("ping", () => {
-    // Respond to the ping event with a pong event
-    socket.emit("pong");
-  });
+  
 
   
 
