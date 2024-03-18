@@ -22,7 +22,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 const PORT = process.env.PORT || 5000;
-
 const rooms = {};
 const turnInfo = {};
 const gameStates = {};
@@ -55,7 +54,7 @@ io.on("connection", (socket) => {
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
-
+  
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
@@ -69,45 +68,39 @@ io.on("connection", (socket) => {
         },
       };
     }
-
-    // Check if the cards are already shuffled for this room
+  
     if (!shuffledCardsMap[roomId]) {
       const shuffledCards = generateUniqueCards();
       shuffleCards(shuffledCards);
       shuffledCardsMap[roomId] = shuffledCards;
     }
-
-    // Broadcast the "game-started" event to all clients in the room
+  
     io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCardsMap[roomId], Date.now());
-
+  
     const existingPlayer = rooms[roomId].players.find(
       (player) => player.id === socket.id
     );
-
+  
     if (!existingPlayer) {
       const newPlayer = { id: socket.id, name: playerName };
       rooms[roomId].players.push(newPlayer);
-
-      // Update the new player's game state with the current game data
+  
       io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
-
-      // Emit "player-joined" event to all clients in the room
       io.to(roomId).emit("player-joined", rooms[roomId].players);
     }
-
-    // Set the current turn if there are players in the room
+  
     if (!rooms[roomId].currentTurn && rooms[roomId].players.length > 0) {
       rooms[roomId].currentTurn = rooms[roomId].players[0].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
-
-    // Emit the current turn and the game state to the newly joined player
+  
     if (rooms[roomId].currentTurn) {
       io.to(socket.id).emit("turn-change", rooms[roomId].currentTurn);
       io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
     }
   });
+  
 
   socket.on("flip-card", (roomId, playerName, cardId, selectedCards) => {
     if (!gameStates[roomId]) {
@@ -231,29 +224,23 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     totalUsers--;
-    //console.log("A user disconnected");
-
-    // Remove the user from the onlineUsers array
+  
     const userIndex = onlineUsers.indexOf(socket.id);
-
+  
     if (userIndex !== -1) {
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
-    //console.log("disconnect part", onlineUsers);
-
-    // Find the rooms that the user was in
+  
     Object.keys(rooms).forEach((roomId) => {
-      // Check if the room exists and has players
       if (rooms[roomId] && rooms[roomId].players) {
         const playerIndex = rooms[roomId].players.findIndex(
           (player) => player.id === socket.id
         );
-
+  
         if (playerIndex !== -1) {
           const removedPlayer = rooms[roomId].players.splice(playerIndex, 1)[0];
-
-          // If the removed player has the current turn, pass the turn to the next player
+  
           if (rooms[roomId].currentTurn === socket.id) {
             if (rooms[roomId].players.length > 0) {
               const currentTurnIndex = rooms[roomId].players.findIndex(
@@ -261,29 +248,26 @@ io.on("connection", (socket) => {
               );
               const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
               rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
-
-              // Emit "turn-change" event to update the current turn
+  
               io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
             } else {
-              // If there are no players left, delete the room
               delete rooms[roomId];
               delete shuffledCardsMap[roomId];
               delete gameStates[roomId];
             }
           }
-
-          // Call the startGame function when a player leaves
+  
           startGame(roomId);
-
-          // Check if the room exists before emitting events
+  
           if (rooms[roomId]) {
             io.to(roomId).emit("player-left", rooms[roomId].players);
-            io.to(roomId).emit("update-game-state", rooms[roomId].gameData); // Optionally, update game state on player leave
+            io.to(roomId).emit("update-game-state", rooms[roomId].gameData);
           }
         }
       }
     });
   });
+  
 
 
 
