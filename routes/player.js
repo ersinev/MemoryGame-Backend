@@ -49,20 +49,20 @@ router.delete('/delete-all', async (req, res) => {
   }
 });
 
-// Route to delete a player record by ID
-// router.delete('/:id', async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const deletedPlayer = await Player.findByIdAndDelete(id);
-//     if (!deletedPlayer) {
-//       res.status(404).json({ error: 'Player not found.' });
-//     } else {
-//       res.status(200).json({ message: 'Player deleted successfully.' });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ error: error.message });
-//   }
-// });     
+
+router.delete('/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const deletedPlayer = await Player.findByIdAndDelete(id);
+    if (!deletedPlayer) {
+      res.status(404).json({ error: 'Player not found.' });
+    } else {
+      res.status(200).json({ message: 'Player deleted successfully.' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});     
 
 
 
