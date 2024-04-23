@@ -32,7 +32,7 @@ const io = socketIo(server, {
 // app.use(cors(corsOptions));
 app.use(cors({
   origin: "https://itgaragememorygame.netlify.app",
-  methods: ["GET", "POST"],
+  methods: ["GET", "POST","DELETE"],
 }));
 
 
@@ -44,8 +44,7 @@ console.log("MongoDB URL:", process.env.MONGO_URL);
 // Bağlantıyı kurma
 mongoose
   .connect(process.env.MONGO_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+   
   })
   .then(() => {
     console.log("Connected to MongoDB");
