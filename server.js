@@ -6,22 +6,55 @@ const { generateUniqueCards } = require("./cards");
 const app = express();
 const server = http.createServer(app);
 const { setInterval } = require('timers');
+const Player = require('./models/Player');
+const player = require('./routes/player')
+const PORT = process.env.PORT || 5000;
+app.use(express.json())
+app.use('/player', player)
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+
 const io = socketIo(server, {
   cors: {
     /////
     //http://localhost:3000 
     //https://itgaragememorygame.netlify.app
     origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "DELETE"],
   },
 });
-const corsOptions = {
-  origin: ["https://itgaragememorygame.netlify.app", "https://itgaragememorygame.netlify.app/admin"],
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-};
-app.use(cors(corsOptions));
 
-const PORT = process.env.PORT || 5000;
+// const corsOptions = {
+//   origin: ["http://localhost:3000", "http://localhost:3000/admin","http://localhost:5000/player/start"],
+//   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+// };
+// app.use(cors(corsOptions));
+app.use(cors({
+  origin: "https://itgaragememorygame.netlify.app",
+  methods: ["GET", "POST"],
+}));
+
+
+console.log("MongoDB URL:", process.env.MONGO_URL);
+
+// MongoDB'ye bağlanmak için URI
+
+
+// Bağlantıyı kurma
+mongoose
+  .connect(process.env.MONGO_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => {
+    console.log("Connected to MongoDB");
+  })
+  .catch((err) => {
+    console.error("Error connecting to MongoDB:", err);
+  });
+
+
 const rooms = {};
 const turnInfo = {};
 const gameStates = {};
@@ -40,21 +73,15 @@ io.on("connection", (socket) => {
   // Add the user to the onlineUsers array
   onlineUsers.push(socket.id);
 
-  
+
 
   io.to("admin").emit("online-users", onlineUsers);
   io.to("admin").emit("room-data", rooms);
-  //////////////////////////////------PING-SERVER-----////////////////////////////////////////
-  
-
-  
-
-
-  /////////////////////////////////////////////////////////////////////
 
   socket.on("join-room", (roomId, playerName) => {
     socket.join(roomId);
-  
+
+
     if (!rooms[roomId]) {
       rooms[roomId] = {
         players: [],
@@ -68,39 +95,39 @@ io.on("connection", (socket) => {
         },
       };
     }
-  
+
     if (!shuffledCardsMap[roomId]) {
       const shuffledCards = generateUniqueCards();
       shuffleCards(shuffledCards);
       shuffledCardsMap[roomId] = shuffledCards;
     }
-  
+
     io.to(roomId).emit("game-started", rooms[roomId].gameId, shuffledCardsMap[roomId], Date.now());
-  
+
     const existingPlayer = rooms[roomId].players.find(
       (player) => player.id === socket.id
     );
-  
+
     if (!existingPlayer) {
       const newPlayer = { id: socket.id, name: playerName };
       rooms[roomId].players.push(newPlayer);
-  
+
       io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
       io.to(roomId).emit("player-joined", rooms[roomId].players);
     }
-  
+
     if (!rooms[roomId].currentTurn && rooms[roomId].players.length > 0) {
       rooms[roomId].currentTurn = rooms[roomId].players[0].id;
       turnInfo[roomId] = rooms[roomId].currentTurn;
       io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
     }
-  
+
     if (rooms[roomId].currentTurn) {
       io.to(socket.id).emit("turn-change", rooms[roomId].currentTurn);
       io.to(socket.id).emit("update-game-state", rooms[roomId].gameData);
     }
   });
-  
+
 
   socket.on("flip-card", (roomId, playerName, cardId, selectedCards) => {
     if (!gameStates[roomId]) {
@@ -209,8 +236,7 @@ io.on("connection", (socket) => {
         io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
       }
     }
-  });
-
+  })
 
   socket.on("update-points", (roomId, updatedPoints) => {
     // Update server-side points data
@@ -221,26 +247,65 @@ io.on("connection", (socket) => {
   });
 
 
-
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
+    // When a player disconnects
     totalUsers--;
-  
+
     const userIndex = onlineUsers.indexOf(socket.id);
-  
+
     if (userIndex !== -1) {
       onlineUsers.splice(userIndex, 1);
       io.to("admin").emit("online-users", onlineUsers);
     }
-  
-    Object.keys(rooms).forEach((roomId) => {
+
+    Object.keys(rooms).forEach(async (roomId) => {
       if (rooms[roomId] && rooms[roomId].players) {
-        const playerIndex = rooms[roomId].players.findIndex(
+        const disconnectedPlayer = rooms[roomId].players.find(
           (player) => player.id === socket.id
         );
-  
-        if (playerIndex !== -1) {
-          const removedPlayer = rooms[roomId].players.splice(playerIndex, 1)[0];
-  
+        
+        if (disconnectedPlayer) {
+          const playerName = disconnectedPlayer.name;
+          
+
+          try {
+            // Find the player in MongoDB
+            const players = await Player.find({ name: playerName, exitTime: null });
+            const player = players.find((player) => player.exitTime === null);
+            if (player) {
+              // If player is found, update exitTime
+              player.exitTime = Date.now(); // Set player's exit time
+              
+              // Calculate elapsed time
+              const elapsedTimeInMillis = player.exitTime - player.startTime;
+              const totalSeconds = Math.floor(elapsedTimeInMillis / 1000);
+              const minutes = Math.floor(totalSeconds / 60);
+              const seconds = totalSeconds % 60;
+              let elapsedTime;
+              if (minutes >= 1) {
+                // If elapsed time is 1 minute or more, include minutes and seconds
+                elapsedTime = `${minutes}m ${seconds}s`;
+              } else {
+                // If elapsed time is less than 1 minute, only include seconds
+                elapsedTime = `${seconds}s`;
+              }
+
+              // Assign elapsedTime to player
+              player.elapsedTime = elapsedTime;
+              await player.save();
+              console.log("Exit time updated:", player.exitTime);
+            } else {
+              console.log("Player not found or already exited.");
+            }
+          } catch (error) {
+            console.error("Database error:", error);
+          }
+
+          // Remove player from room
+          rooms[roomId].players = rooms[roomId].players.filter(
+            (player) => player.id !== socket.id
+          );
+
           if (rooms[roomId].currentTurn === socket.id) {
             if (rooms[roomId].players.length > 0) {
               const currentTurnIndex = rooms[roomId].players.findIndex(
@@ -248,7 +313,7 @@ io.on("connection", (socket) => {
               );
               const nextTurnIndex = (currentTurnIndex + 1) % rooms[roomId].players.length;
               rooms[roomId].currentTurn = rooms[roomId].players[nextTurnIndex].id;
-  
+
               io.to(roomId).emit("turn-change", rooms[roomId].currentTurn);
             } else {
               delete rooms[roomId];
@@ -256,9 +321,9 @@ io.on("connection", (socket) => {
               delete gameStates[roomId];
             }
           }
-  
+
           startGame(roomId);
-  
+
           if (rooms[roomId]) {
             io.to(roomId).emit("player-left", rooms[roomId].players);
             io.to(roomId).emit("update-game-state", rooms[roomId].gameData);
@@ -267,7 +332,12 @@ io.on("connection", (socket) => {
       }
     });
   });
-  
+
+
+
+
+
+
 
 
 
